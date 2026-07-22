@@ -1,0 +1,132 @@
+{
+  "_comment_format": "Структура fitch contract. 5 ролей выполняются последовательно, каждая читает контракт + добавляет свой раздел или явно пишет not_applicable с reason. Это input для FITCH-PLAN.md синтеза.",
+  "_comment_usage": "Создаётся skill /fitch автоматически. Если skill не используется — Techlead заполняет вручную итеративно (analyst → designer → tech_lead → toster → devops).",
+
+  "epic_id": "<EPIC-ID>",
+  "epic_name": "<short name>",
+  "created_date": "<YYYY-MM-DD>",
+  "chief": "<CHIEF>",
+  "techlead": "Opus (main chat)",
+  "platform": "<Desktop | Web | Backend | Multi>",
+  "installer_slot": "<slot prefix> <version>",
+  "predecessors": ["<EPIC-ID>", "<EPIC-ID>"],
+  "branch": "feature/<epic-id>-<short-name>",
+
+  "analyst": {
+    "status": "done | not_applicable",
+    "not_applicable_reason": "<если not_applicable>",
+    "key_finding": "<one-line summary>",
+    "requirements": [
+      {
+        "id": "R01",
+        "title": "<title>",
+        "description": "<one-paragraph spec>",
+        "priority": "P0 | P1 | P2",
+        "rationale": "<why>",
+        "affected_areas": ["<file path>", "<module>"],
+        "acceptance_hint": "<what defines done>"
+      }
+    ],
+    "out_of_scope": [
+      {"item": "<thing>", "reason": "<why deferred>", "destination": "<PRJ-NNN.x pickup | другой эпик>"}
+    ]
+  },
+
+  "designer": {
+    "status": "done | not_applicable",
+    "not_applicable_reason": "<если эпик без UI>",
+    "key_finding": "<one-line>",
+    "components_new": [
+      {"name": "<ComponentName>", "purpose": "<one-line>", "props": "<key props>"}
+    ],
+    "components_modified": [
+      {"name": "<ExistingComponent>", "change": "<one-line>"}
+    ],
+    "ux_decisions": [
+      {"decision": "<one-line>", "rationale": "<why>"}
+    ],
+    "design_tokens": "<reference to design system file or 'use existing'>"
+  },
+
+  "tech_lead": {
+    "status": "done",
+    "key_finding": "<one-line architecture summary>",
+    "tasks": [
+      {
+        "id": "T01",
+        "wave": "W1",
+        "title": "<title>",
+        "files_touched": ["<path>"],
+        "dependencies": ["<previous T-id>"],
+        "estimated_size": "<60-200 строк task-файла>",
+        "task_file": "task-01-<short-name>.md"
+      }
+    ],
+    "waves": [
+      {
+        "id": "W1",
+        "name": "<wave name>",
+        "tasks": ["T01", "T02", "T03"],
+        "parallel_groups": [
+          ["T01"],
+          ["T02", "T03"]
+        ],
+        "wave_gate": "<concrete DoD command + expected metric>"
+      }
+    ],
+    "file_isolation_audit": {
+      "passed": true,
+      "conflicts_resolved": [
+        {"file": "<path>", "issue": "trog в W2 task-X и W4 task-Y", "resolution": "sequential — нет race"}
+      ]
+    },
+    "out_of_scope": ["<things deferred to follow-up epic>"]
+  },
+
+  "toster": {
+    "status": "done | not_applicable",
+    "not_applicable_reason": "<if no testable changes>",
+    "key_finding": "<one-line>",
+    "qa_matrix": [
+      {
+        "id": "QA01",
+        "covers": ["R01"],
+        "test_type": "Rust unit | E2E spec | manual smoke",
+        "test_file": "<path or spec name>",
+        "verification_command": "<concrete bash>",
+        "expected_output": "<machine-readable result>"
+      }
+    ],
+    "uncovered_requirements": [],
+    "weak_assertions": [
+      {"qa_id": "QA<N>", "issue": "negative-only assertion", "fix": "<concrete suggestion>"}
+    ]
+  },
+
+  "devops": {
+    "status": "done | not_applicable",
+    "key_finding": "<one-line>",
+    "version_bump": {"from": "<X.Y.Z>", "to": "<X.Y.Z+1>"},
+    "installer": {
+      "prefix": "<slot prefix>",
+      "build_command": "<wrapper script>",
+      "output_paths": ["distr/<name>.exe", "distr/<name>.msi"]
+    },
+    "changelog_section": "[<version>] — <date> — <name>",
+    "rollback_plan": "<brief — git revert merge commit, mark previous installer as latest>"
+  },
+
+  "summary": {
+    "total_requirements": "<N>",
+    "total_tasks": "<M>",
+    "total_waves": "<W>",
+    "estimate_days": "<X-Y>",
+    "key_risks": [
+      "<risk 1>",
+      "<risk 2>"
+    ],
+    "audit_findings_addressed": [
+      {"finding": "<B<N>>", "fix_in_task": "T<NN>"}
+    ]
+  }
+}
