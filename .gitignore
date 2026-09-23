@@ -1,7 +1,18 @@
-# process artifacts (WORKFLOW §25)
+# process artifacts (WORKFLOW §25 — гигиена артефактов процесса)
 .claude/tmp/
 .audits/
 *.log
+
+# внешний контур и цепочки (docs/12) — рабочий мусор сессий, не часть артефакта цепочки
+.local-sessions/
+**/.runs/
+chains/*/scratch/
+
+# локальные настройки и секреты — не в репозитории даже в шаблоне
+.claude/settings.local.json
+.env
+.env.*
+!.env.example
 
 # OS / editor
 .DS_Store

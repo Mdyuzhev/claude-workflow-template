@@ -1,55 +1,51 @@
 {
-  "_hint": "Копи-правь шаблон handoff-контракта. Скопировать в .claude/<handoff>.json (например tech_lead_handoff.json), убрать поля _hint. Это снимок состояния между сессиями, не нарастающий лог — переписывается целиком через Filesystem:write_file на 'чекпоинт'. Процесс — WORKFLOW §21. Удалить этот hint после первого заполнения.",
+  "_hint": "Copy-edit checkpoint template. Copy to `.claude/<handoff-name>.json`, delete every `_hint` key after first fill. This is a snapshot of state between sessions, not an append-only log — it gets REWRITTEN WHOLE on 'checkpoint', not appended to. Mechanics: PIPELINE §11.",
 
-  "checkpoint_at": "<ISO-8601 timestamp с таймзоной>",
-  "session_summary": "<1 абзац: что сделано в этой сессии, какой эпик закрыт/в работе, ключевые commits/hashes, решения Chief'а. Это то что читается первым для быстрого восстановления контекста.>",
+  "updated": "<UTC ISO-8601 timestamp, from `date -u` or `git show -s --format=%cI`, never hand-typed>",
+  "updated_by": "<role that wrote this checkpoint, e.g. 'orchestrator' | 'lead'>",
 
   "identity": {
-    "role": "Тех-лид <PROJECT>, главный чат с <CHIEF>",
-    "model": "<Opus версия>",
-    "executor": "<Sonnet версия в Claude Code>",
-    "communication_style": "<краткая выжимка стиля: лаконично, verify по диску молча, команды агенту императивом с точным где/что, git в чате не запускать, развёрнуто только когда Chief скажет 'поговорить'>"
+    "role": "<e.g. 'tech lead, main chat with the owner'>",
+    "contract": "<one line: what this chat commits to vs. what the orchestrator commits to>",
+    "models": "<model per role, e.g. 'lead: Opus - orchestrator: Opus in Claude Code - subagents: an explicitly named model, R6'>",
+    "terminology": "<pointer to the project's own term glossary, rather than restating it here>",
+    "handoff_ownership": "<which sections of this file which role may edit, e.g. 'orchestrator appends current_state.<id> blocks; lead edits identity and awaiting_owner only'>"
   },
 
-  "project_state": {
-    "version": "<текущая версия + installer slot, например 0.1.NN W + 0.1.MM L>",
-    "baselines": "<passing/failing/skip по платформам, дата приёмки Chief'ом>",
-    "tags": "<актуальные теги + предыдущие>",
-    "main_head": "<short hash = origin/main = tag, verified по .git/refs>",
-    "frozen_platforms": "<замороженные кодовые базы — не трогать без явной задачи>"
+  "current_state": {
+    "status": "<one line: what is in flight right now>",
+    "history_compact": [
+      "<one line per closed epic/train, oldest first: id - one-line result - hash/tag if applicable>"
+    ],
+    "_hint_active_blocks": "One nested object per active epic or train is appended here by the orchestrator as work proceeds, keyed by its own id (e.g. \"epic_slug\" or \"train_slug\"). Keys inside each block are free-form per epic - brief pointer, order, status, blockers. A closed epic's block moves into history_compact as one line instead of staying here in full.",
+    "<epic_or_train_id>": {
+      "brief_pointer": "<path to the brief/chain-brief this block tracks>",
+      "status": "<one line>",
+      "blockers": "<list or 'none'>"
+    }
   },
 
-  "CLOSE_STATUS": "<статус последнего эпика: ЗАКРЫТ <date> / в работе W<N>. main=origin/main=tag verified. Активный эпик: <id или НЕТ>. Следующий: <id>.>",
-
-  "open_items": {
-    "<key>": "<отложенный пункт / pickup / известная мелочь с указанием куда уходит>"
-  },
-
-  "lessons_this_epic": {
-    "<L-NNN-NN>": "<урок текущего эпика, который при close мигрирует в REFERENCE.md>"
-  },
-
-  "awaiting_chief": "<на каком решении ждём Chief'а: выбор следующего эпика / approve scope / confirmation merge>",
-
-  "next_session_first_steps": [
-    "1. Прочитать ЭТОТ файл + .claude/CLAUDE.md + ROADMAP.md",
-    "2. <конкретный следующий шаг>",
-    "3. <стандартный цикл / запуск волны>"
+  "incidents_open": [
+    "<one line per open incident: what broke, current mitigation, owner of the fix>"
   ],
 
-  "post_wave_protocol": "После КАЖДОЙ волны: diag/wN-report.md → verify ключевых точек по диску (НЕ на слово, §22) → synthesis 1-2 строки → patches если нужны → confirmation. Sonnet-метрики (smoke, hash, лог, timestamps) verify обязательно для критичного. Перед КАЖДЫМ merge/push — confirmation Chief.",
+  "awaiting_owner": [
+    "<one line per decision the cycle is blocked on: what is being asked, what the options are>"
+  ],
 
-  "tooling": {
-    "filesystem_mcp": "primary. tool_search в начале сессии. write_file надёжен (verify чтением). edit_file байт-в-байт НО спецсимволы ломают match — крупные правки через write_file. create_file ненадёжен в скрытых каталогах.",
-    "bash_scope": "Bash видит ТОЛЬКО Claude-контейнер, НЕ репозиторий. git/npm/grep — через orchestrator либо Filesystem. Тех-лид git в чате НЕ запускает.",
-    "git_refs": ".git/refs/heads/* + refs/remotes/origin/* + refs/tags/* + HEAD читаемы через Filesystem — verify после чужого merge/push/tag.",
-    "version_sources": "<список источников версии в lockstep>",
-    "build": "<wrapper-скрипты, никогда базовый toolchain; per-target нюансы>",
-    "test_stand": "<тестовый стенд / CI / mock endpoints если есть>",
-    "checkpoint": "<внешний checkpoint-сервис если есть; если недоступен — этот файл единственный канал>"
+  "next_session_first_steps": [
+    "1. Read THIS file, then the project's own entry-point doc.",
+    "2. <concrete next step>",
+    "3. <standard resume path, e.g. 'continue the chain from its last RESUME line'>"
+  ],
+
+  "tooling_notes": {
+    "checkpoint_channel": "<how this file gets written, e.g. 'filesystem write, verified by re-read'; name a dead channel explicitly if one exists so nobody retries it>",
+    "version_sources": "<list of files that must move in lockstep on a version bump>",
+    "build": "<wrapper scripts to use; never the bare toolchain directly>",
+    "test_stand": "<test environment / mocks, if any>",
+    "needs_restart": "<tools whose long-lived process must restart to see a recent change, or 'none'>"
   },
 
-  "invariants_snapshot": "<краткий снимок project-specific инвариантов на текущий момент — то что нельзя нарушать, обновляется при изменении>",
-
-  "session_start_protocol": "Фраза '<session-start триггер>' = прочитать ЭТОТ файл ПЕРВЫМ через Filesystem MCP. 'чекпоинт' = перезаписать целиком через write_file, отчёт одной строкой."
+  "patterns_reminder": "<short list of the project's own hard invariants that must not be violated silently - a pointer to the canonical doc is better than restating them here>"
 }

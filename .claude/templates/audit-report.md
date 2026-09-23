@@ -1,155 +1,161 @@
 # Audit Report Template
 
-Шаблон отчёта аудита. Лежит в `.audits/<date>-<scope>.md`. Использует triangulation rule (3+ источника = твёрдый блокер, 2 = probable, 1 = solo verified).
+Lives at `<audits-path>/<date>-<scope>.md`. Uses the triangulation rule: 3+ independent sources
+= hard blocker, 2 = probable, 1 = solo (lead-verified before it counts for anything).
 
-Multi-role audit делается через несколько subagent'ов параллельно в Claude Code, каждый в своей роли. Затем Techlead агрегирует findings в этот отчёт.
+A multi-role audit runs several subagents in parallel, each in its own role; the lead then
+aggregates their findings into this single report.
 
 ---
 
 # Audit: `<Scope>` — `<Date>`
 
 **Date:** `<YYYY-MM-DD>`
-**Scope:** `<что аудируется — fitch эпика, конкретный модуль, целая кодовая база>`. `<size в строках кода / количество task-файлов / etc>`.
-**Scale:** `<Mini | Small | Medium | Large>` (определяет состав ролей)
-**Sources:** `<self-inspection (Techlead) + architect + engineer + skeptic + security + qa>`
+**Scope:** `<what is being audited — an epic's fitch package, one module, the whole codebase>`,
+`<size: lines of code / number of task files / etc>`.
+**Scale:** `<Mini | Small | Medium | Large>` (drives which roles run — see "Scope sizing" below)
+**Sources:** `<self-inspection (lead) + architect + engineer + skeptic + security + qa, as applicable>`
 
-## Сводка
+## Summary
 
-1-2 абзаца честной оценки:
-- Что хорошо в целевом артефакте.
-- Что является блокером для merge / запуска.
-- Главный системный сигнал (что-то что повторяется через несколько finding'ов и указывает на root cause).
+1-2 honest paragraphs:
+- What is genuinely good in the audited artifact.
+- What blocks it from moving forward.
+- The main systemic signal — something that repeats across several findings and points at a
+  root cause, not just a list of unrelated bugs.
 
-Пример:
-> Эпик хорошо структурирован — N волн с правильной идеей "bugfix перед refactor", coverage matrix формально полна, file-isolation декларирована. Но при буквальной верификации обнаружены два жёстких блокера (вся волна WX описывает уже сделанную работу + физически отсутствующий task-NNc) и серия implementation-блокеров в WY Rust-task'ах.
+Example shape:
+> The epic is well structured — N waves in a sound order, the coverage matrix formally complete,
+> file isolation declared. But literal verification found two hard blockers (one wave describes
+> work already done elsewhere; one referenced task file does not physically exist) plus a series
+> of implementation blockers in the platform-facing tasks.
 >
-> Главный системный сигнал: WX пройдено через analyst+tech_lead+toster fitch-фазу со ссылкой на «реальное чтение кода» — но сама верификация для этого файла не выполнена. Это нарушение нашего инварианта «не угадывать сигнатуры по памяти». Перед стартом нужен сплошной grep-pass всех task-файлов.
+> Main systemic signal: the affected wave passed through the analyst/tech-lead/QA fitch phase
+> citing "real code was read" — but that verification never actually ran for this file. That is
+> a violation of the project's own "never guess a signature from memory" rule; the fix is a full
+> grep-pass over every task file before the next wave starts.
 
 ---
 
-## Triangulated findings (3+ sources) — твёрдые блокеры
+## Triangulated findings (3+ sources) — hard blockers
 
-Findings подтверждённые тремя или более ролями. **Чинить обязательно перед merge.**
+Confirmed by three or more roles. **Must fix before merge.**
 
-### ❌ B1 — `<one-line summary>`
+### FAIL B1 — `<one-line summary>`
 
-**Где:**
+**Where:**
 - `<file:line>` — `<one-line context>`
 - `<another file:line>` — `<context>`
-- `<contract reference / fitch-plan reference>` — `<claim that contradicts reality>`
+- `<contract / fitch-plan reference>` — `<claim that contradicts reality>`
 
-**Согласны:** architect (`<finding ref>`), engineer (`<ref>`), skeptic (`<ref>`), self-inspection.
+**Agree:** architect (`<finding ref>`), engineer (`<ref>`), skeptic (`<ref>`), self-inspection.
 
-**Риск:**
+**Risk:**
 1. `<concrete failure scenario 1>`
 2. `<scenario 2>`
 
-**Фикс:** `<concrete actionable resolution с command или edit description>`.
+**Fix:** `<concrete, actionable resolution — a command or an edit description>`.
 
 ---
 
-### ❌ B2 — `<...>`
-
-(копия структуры)
+### FAIL B2 — `<...>` (same structure)
 
 ---
 
-## Probable findings (2 sources, проверены кодом)
+## Probable findings (2 sources, code-verified)
 
-Findings подтверждённые двумя ролями + verified самим Techlead'ом через Filesystem MCP. **P1 priority, чинить если не блокирует merge — то в W1 hotfix.**
+Confirmed by two roles plus the lead's own verification against the real file. **P1 priority —
+fix if it doesn't block merge, otherwise in the first hotfix wave.**
 
-### ⚠️ P1 — `<summary>`
+### WARN P1 — `<summary>`
 
-**Где:** `<refs>`.
-**Согласны:** `<two role refs>`, `<verified by self>`.
-**Риск:** `<scenario>`.
-**Фикс:** `<resolution>`.
-
----
-
-## Solo findings (verified by Techlead)
-
-Findings из одного источника но verified Techlead'ом через реальный код. **P2 — backlog или quick fix если cost мал.**
-
-### ⚠️ S1 — `<summary>`
-
-**Source:** `<single role>`.
-**Verified:** Read `<file>` confirms `<observation>`.
-**Exploit scenario / risk:** `<concrete>`.
-**Impact:** `<who is affected, blast radius>`.
-**Фикс:** `<resolution>`.
+**Where:** `<refs>`. **Agree:** `<two role refs>`, verified by self-inspection.
+**Risk:** `<scenario>`. **Fix:** `<resolution>`.
 
 ---
 
-## REJECT под сомнением
+## Solo findings (lead-verified)
 
-Findings которые скептик / security предложили отклонить. Приводим оба мнения и резюме Techlead'а.
+One source, but the lead confirmed it against real code. **P2 — backlog, or a quick fix if
+cheap.**
+
+### WARN S1 — `<summary>`
+
+**Source:** `<single role>`. **Verified:** reading `<file>` confirms `<observation>`.
+**Scenario / risk:** `<concrete>`. **Impact:** `<who is affected, blast radius>`.
+**Fix:** `<resolution>`.
+
+---
+
+## REJECT — under dispute
+
+Findings the skeptic or security role proposed to reject. Both positions plus the lead's ruling.
 
 ### `<finding name>`
 
-**Skeptic / Security:** `<position>`.
-**Counter-argument:** `<other position>`.
-**Резюме Techlead'а:** `<reject | accept | partial accept with backlog item>`.
+**Skeptic / security:** `<position>`. **Counter-argument:** `<other position>`.
+**Lead's ruling:** `<reject | accept | partial accept as a backlog item>`.
 
 ---
 
 ## Backlog / dropped
 
-Findings которые имеют один источник и **не critical**, либо нуждаются в коде-проверке которую Techlead не провёл, либо — теоретика. Документируем как «возможный риск», не чиним в этом эпике. Ответственность за follow-up — на Chief'е.
+Single-source, non-critical, or needing code verification the lead did not perform this round —
+documented as a possible risk, not fixed in this epic. Follow-up ownership sits with the owner.
 
-- `<finding>` (`<source ref>`). `<one-line context>`. Cost: `<estimate>`. Эпик-pickup: `<PRJ-NNN.x | next epic>`.
-- (... список ...)
+- `<finding>` (`<source ref>`). `<one-line context>`. Cost: `<estimate>`. Pickup: `<epic id | next epic>`.
 
 ---
 
 ## Sources detail
 
 ### Architect summary (`<N>` findings)
-Структурный фокус. Top: `<B-list>`, `<P-list>`. Полный отчёт прилагался.
+Structural focus. Top: `<B-list>`, `<P-list>`.
 
 ### Engineer summary (`<N>` findings)
-Реализационный фокус. Top: `<list>`. Verified реальный код `<file refs>`.
+Implementation focus. Top: `<list>`. Verified against real code at `<file refs>`.
 
 ### Skeptic summary (`<N>` findings)
-Композиция и REJECT-фильтр. Top: `<list>`.
+Composition and REJECT-filter. Top: `<list>`.
 
-### Security summary (`<N>` findings, OWASP)
-Threat model focus. Top: `<list>`. Maps to OWASP `<A03 / A09 / A10>`.
+### Security summary (`<N>` findings, OWASP-mapped)
+Threat-model focus. Top: `<list>`. Maps to OWASP `<A03 / A09 / A10>`.
 
 ### QA summary (`<N>` findings + matrix verification)
-Coverage gaps focus. Top: `<list>`. Coverage matrix verification: `<hard gaps + risks + weak assertions count>`.
+Coverage-gap focus. Top: `<list>`. Coverage matrix verification: `<hard gaps + weak assertions
+count>`.
 
 ---
 
-## Что делать перед W1 (action list для Techlead)
+## Action list before W1
 
-Конкретный пошаговый план как closeать blocker'ов перед стартом эпика:
+A concrete, ordered plan to close blockers before the epic starts:
 
 1. `<Action 1>` — `<one-line>`.
 2. `<Action 2>` — `<one-line>`.
 3. `<Action N>` — `<one-line>`.
 
-После этих изменений запускать W1 с пониманием что matrix `uncovered_requirements: []` после фикса всё ещё формальна — реальный coverage проверится только когда `<infrastructure>` встанет на место.
+After these changes, W1 can start understanding that an empty "uncovered requirements" list is
+still formal — real coverage is proven only once `<the relevant infrastructure>` is in place.
 
 ---
 
 ## Triangulation rule mechanics
 
-Audit использует triangulation rule:
-- **1 source** = слабый сигнал. Один роль может ошибиться, дать false positive, защитить свой первый диагноз. Solo finding документируется но не делается без Techlead verification.
-- **2 sources** = вероятно. Probable finding, чинить с приоритетом P1 если не блокер.
-- **3+ sources** = твёрдый блокер. Triangulated finding, чинить обязательно.
+- **1 source** = weak signal. Any single role can misdiagnose or defend its own first read. A
+  solo finding is documented but never acted on without lead verification.
+- **2 sources** = probable. P1 priority if it isn't a blocker.
+- **3+ sources** = hard blocker. Must fix.
 
-Composition bugs (когда отдельные finding'и складываются в attack chain через несколько модулей) — отдельная категория. Они могут быть **не triangulated в одном модуле** но визуально складываются в одну реальную проблему. Triangulation не отлавливает их автоматически — Techlead делает synthesis pass.
+Composition bugs — individual findings that chain into a real attack path across modules — may
+not triangulate inside any one module but visually compose into one real problem. Triangulation
+does not catch these automatically; the lead runs a synthesis pass for them.
 
-## Когда какой scope audit'а
+## Scope sizing
 
-**Mini** — single file / single function review. 1 роль (engineer или skeptic). 5-15 минут.
+**Mini** — a single file/function. 1 role. 5-15 minutes.
+**Small** — a single module, 5-10 files. 2 roles (architect + engineer). 30-60 minutes.
+**Medium** — a feature/epic, 20-50 files. 3 roles (+ skeptic). 1-2 hours.
+**Large** — multi-module / cross-cutting / a full fitch package. 5 roles (+ security + QA). 2-4h.
 
-**Small** — single module / 5-10 файлов. 2 роли (architect + engineer). 30-60 минут.
-
-**Medium** — feature / эпик / 20-50 файлов. 3 роли (architect + engineer + skeptic). 1-2 часа.
-
-**Large** — multi-module / cross-cutting / fitch эпика. 5 ролей (architect + engineer + skeptic + security + qa). 2-4 часа.
-
-Wall-clock — параллельный (subagent'ы стартуют одновременно), Techlead synthesis после.
+Wall-clock is parallel — subagents start together, the lead synthesizes after.
